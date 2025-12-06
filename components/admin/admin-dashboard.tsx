@@ -635,20 +635,25 @@ const AdminDashboard = () => {
         can_create_tasks: false,
       },
     )
-    if (user.role === "guest") {
-      fetchUserWorkspaces(user.id)
+    // Fetch workspace access for both guests and regular users
+    if (user.role === "guest" || user.role === "user") {
+      fetchUserWorkspaces(user.id, user.role)
     } else {
       setEditUserWorkspaces([])
     }
     setIsEditUserDialogOpen(true)
   }
 
-  const fetchUserWorkspaces = async (userId: string) => {
+  const fetchUserWorkspaces = async (userId: string, role: string) => {
     try {
+      // Query the appropriate table based on role
+      const tableName = role === "guest" ? "guest_workspace_access" : "user_workspace_access"
+      const idColumn = role === "guest" ? "guest_id" : "user_id"
+
       const { data, error } = await supabase
-        .from("guest_workspace_access")
+        .from(tableName)
         .select("workspace_id")
-        .eq("guest_id", userId)
+        .eq(idColumn, userId)
 
       if (error) {
         console.error("Error fetching user workspaces:", error)
@@ -656,7 +661,7 @@ const AdminDashboard = () => {
         return
       }
 
-      setEditUserWorkspaces(data?.map((item) => item.workspace_id) || [])
+      setEditUserWorkspaces(data?.map((item: { workspace_id: string }) => item.workspace_id) || [])
     } catch (error) {
       console.error("Error fetching user workspaces:", error)
       setEditUserWorkspaces([])
@@ -684,7 +689,8 @@ const AdminDashboard = () => {
           full_name: editUserName.trim(),
           role: editUserRole,
           privileges: editUserPrivileges,
-          workspace_ids: editUserRole === "guest" ? editUserWorkspaces : undefined,
+          // Send workspace_ids for both guests and regular users (not admins)
+          workspace_ids: editUserRole !== "admin" ? editUserWorkspaces : undefined,
           admin_id: auth.user?.id, // Pass admin ID for workspace access tracking
         }),
       })
@@ -2368,12 +2374,13 @@ This is your last chance to cancel. The project will be permanently deleted.`,
               </Select>
             </div>
 
-            {editUserRole === "guest" && (
+            {(editUserRole === "guest" || editUserRole === "user") && (
               <div className="space-y-3 border-t pt-4">
                 <Label className="text-sm font-medium">Workspace Access</Label>
                 <p className="text-xs text-muted-foreground">
-                  Select which workspaces this guest can access. Guests can only view and interact with projects in
-                  their assigned workspaces.
+                  {editUserRole === "guest"
+                    ? "Select which workspaces this guest can access. Guests can only view projects in their assigned workspaces."
+                    : "Restrict this user to specific workspaces. Leave empty for access to all workspaces (default)."}
                 </p>
                 <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
                   {workspaces.length === 0 ? (
@@ -2402,11 +2409,15 @@ This is your last chance to cancel. The project will be permanently deleted.`,
                     ))
                   )}
                 </div>
-                {editUserWorkspaces.length > 0 && (
+                {editUserWorkspaces.length > 0 ? (
                   <p className="text-xs text-green-600 dark:text-green-400">
                     {editUserWorkspaces.length} workspace(s) selected
                   </p>
-                )}
+                ) : editUserRole === "user" ? (
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    No restrictions - user can access all workspaces
+                  </p>
+                ) : null}
               </div>
             )}
 

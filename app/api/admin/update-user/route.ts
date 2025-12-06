@@ -65,33 +65,60 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    if (role === "guest" && workspace_ids !== undefined) {
-      // Delete existing workspace assignments
-      const { error: deleteError } = await supabase.from("guest_workspace_access").delete().eq("guest_id", userId)
+    // Handle workspace assignments based on user role
+    if (workspace_ids !== undefined && admin_id) {
+      if (role === "guest") {
+        // For guests, use guest_workspace_access table
+        const { error: deleteError } = await supabase.from("guest_workspace_access").delete().eq("guest_id", userId)
 
-      if (deleteError) {
-        console.error("Error deleting existing workspace access:", deleteError)
-      }
-
-      // Insert new workspace assignments
-      if (workspace_ids.length > 0 && admin_id) {
-        const workspaceAccessRecords = workspace_ids.map((workspace_id: string) => ({
-          guest_id: userId,
-          workspace_id,
-          granted_by: admin_id,
-        }))
-
-        const { error: insertError } = await supabase.from("guest_workspace_access").insert(workspaceAccessRecords)
-
-        if (insertError) {
-          console.error("Error inserting workspace access:", insertError)
-          return NextResponse.json(
-            { error: "User updated but failed to update workspace access: " + insertError.message },
-            { status: 500 },
-          )
+        if (deleteError) {
+          console.error("Error deleting existing guest workspace access:", deleteError)
         }
 
+        if (workspace_ids.length > 0) {
+          const workspaceAccessRecords = workspace_ids.map((workspace_id: string) => ({
+            guest_id: userId,
+            workspace_id,
+            granted_by: admin_id,
+          }))
 
+          const { error: insertError } = await supabase.from("guest_workspace_access").insert(workspaceAccessRecords)
+
+          if (insertError) {
+            console.error("Error inserting guest workspace access:", insertError)
+            return NextResponse.json(
+              { error: "User updated but failed to update workspace access: " + insertError.message },
+              { status: 500 },
+            )
+          }
+        }
+      } else if (role === "user") {
+        // For regular users, use user_workspace_access table
+        const { error: deleteError } = await supabase.from("user_workspace_access").delete().eq("user_id", userId)
+
+        if (deleteError) {
+          console.error("Error deleting existing user workspace access:", deleteError)
+        }
+
+        // Only insert if there are specific workspaces assigned (opt-in)
+        // Empty array means "see all workspaces" (no restrictions)
+        if (workspace_ids.length > 0) {
+          const workspaceAccessRecords = workspace_ids.map((workspace_id: string) => ({
+            user_id: userId,
+            workspace_id,
+            granted_by: admin_id,
+          }))
+
+          const { error: insertError } = await supabase.from("user_workspace_access").insert(workspaceAccessRecords)
+
+          if (insertError) {
+            console.error("Error inserting user workspace access:", insertError)
+            return NextResponse.json(
+              { error: "User updated but failed to update workspace access: " + insertError.message },
+              { status: 500 },
+            )
+          }
+        }
       }
     }
 
