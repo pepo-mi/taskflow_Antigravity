@@ -24,9 +24,9 @@ export function ResetPasswordForm() {
   const supabase = createClient()
 
   useEffect(() => {
-    console.log("[v0] Reset password page loaded")
-    console.log("[v0] Full URL:", window.location.href)
-    console.log("[v0] Hash:", window.location.hash)
+
+
+
 
     const hashParams = new URLSearchParams(window.location.hash.substring(1))
     const accessToken = hashParams.get("access_token")
@@ -37,18 +37,10 @@ export function ResetPasswordForm() {
     const expiresAt = hashParams.get("expires_at")
     const expiresIn = hashParams.get("expires_in")
 
-    console.log("[v0] URL Parameters:", {
-      accessToken: accessToken ? `${accessToken.substring(0, 20)}...` : null,
-      type,
-      error: errorParam,
-      errorDescription,
-      refreshToken: refreshToken ? `${refreshToken.substring(0, 20)}...` : null,
-      expiresAt,
-      expiresIn,
-    })
+
 
     if (errorParam) {
-      console.log("[v0] Error in URL hash:", errorParam, errorDescription)
+
       if (errorParam === "access_denied" && errorDescription?.includes("expired")) {
         setError("Your password setup link has expired. Password setup links are valid for 1 hour after being sent.")
         setIsExpired(true)
@@ -63,7 +55,7 @@ export function ResetPasswordForm() {
     }
 
     if (accessToken && type === "recovery") {
-      console.log("[v0] Valid recovery token found, setting session")
+
       setIsValidToken(true)
       supabase.auth
         .setSession({
@@ -76,12 +68,10 @@ export function ResetPasswordForm() {
             setError("Failed to validate your setup link. Please contact your administrator.")
             setIsExpired(true)
             setIsValidToken(false)
-          } else {
-            console.log("[v0] Session set successfully")
           }
         })
     } else {
-      console.log("[v0] Invalid token or type:", { accessToken: !!accessToken, type })
+
       setError("Invalid or expired setup link. Please contact your administrator for a new invitation.")
       setIsExpired(true)
     }
@@ -93,7 +83,7 @@ export function ResetPasswordForm() {
     setSuccess("")
     setIsLoading(true)
 
-    console.log("[v0] Attempting to update password")
+
 
     if (password !== confirmPassword) {
       setError("Passwords do not match")
@@ -117,7 +107,7 @@ export function ResetPasswordForm() {
         throw error
       }
 
-      console.log("[v0] Password updated successfully")
+
       setSuccess("Password updated successfully! Redirecting to login...")
 
       setTimeout(() => {

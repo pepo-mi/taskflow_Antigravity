@@ -18,9 +18,9 @@ export default function SetupPasswordLanding() {
     const accessToken = params.get("access_token")
     const type = params.get("type")
 
-    console.log("[v0] Setup password landing - checking for token")
-    console.log("[v0] Has access_token:", !!accessToken)
-    console.log("[v0] Type:", type)
+
+
+
 
     if (accessToken && type === "recovery") {
       setHasToken(true)
@@ -37,7 +37,7 @@ export default function SetupPasswordLanding() {
   }, [])
 
   const handleContinue = () => {
-    console.log("[v0] User clicked continue, redirecting to reset password page")
+
     // Redirect to the actual reset password page with the token intact
     router.push(`/auth/reset-password${window.location.hash}`)
   }

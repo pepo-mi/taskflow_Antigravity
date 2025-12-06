@@ -2,12 +2,7 @@ import { createClient } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
 import { logAdminAction } from "@/lib/admin-logger"
 
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-})
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,6 +23,13 @@ export async function POST(request: NextRequest) {
 
     const requestUrl = new URL(request.url)
     const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`
+
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
 
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
       redirectTo: `${baseUrl}/auth/reset-password`,

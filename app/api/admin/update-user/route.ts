@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           )
         }
 
-        console.log(`[v0] Updated workspace access for guest user: ${workspace_ids.length} workspace(s)`)
+
       }
     }
 

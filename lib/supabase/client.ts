@@ -5,7 +5,7 @@ export function createClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.debug("Supabase environment variables not available, using mock client")
+
     return createMockClient()
   }
 

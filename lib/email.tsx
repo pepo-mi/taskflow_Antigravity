@@ -5,7 +5,7 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY
 if (!RESEND_API_KEY) {
   console.warn(
     "[v0] RESEND_API_KEY is not set. Welcome emails will not be sent. " +
-      "Get your API key at https://resend.com/api-keys and add it to your environment variables.",
+    "Get your API key at https://resend.com/api-keys and add it to your environment variables.",
   )
 }
 
@@ -22,12 +22,12 @@ export async function sendWelcomeEmail({ to, name, resetPasswordUrl, isGuest }: 
   if (!resend || !RESEND_API_KEY) {
     console.warn(
       "[v0] Skipping welcome email - RESEND_API_KEY not configured. " +
-        "To enable welcome emails:\n" +
-        "1. Sign up at https://resend.com\n" +
-        "2. Get your API key from https://resend.com/api-keys\n" +
-        "3. Add RESEND_API_KEY to your environment variables\n" +
-        "4. Verify a domain at https://resend.com/domains\n" +
-        "5. Add RESEND_FROM_EMAIL (e.g., noreply@proper.am) to your environment variables",
+      "To enable welcome emails:\n" +
+      "1. Sign up at https://resend.com\n" +
+      "2. Get your API key from https://resend.com/api-keys\n" +
+      "3. Add RESEND_API_KEY to your environment variables\n" +
+      "4. Verify a domain at https://resend.com/domains\n" +
+      "5. Add RESEND_FROM_EMAIL (e.g., noreply@proper.am) to your environment variables",
     )
     return {
       success: false,
@@ -63,11 +63,10 @@ export async function sendWelcomeEmail({ to, name, resetPasswordUrl, isGuest }: 
               <p style="font-size: 16px; margin-bottom: 20px;">Hi ${name},</p>
               
               <p style="font-size: 16px; margin-bottom: 20px;">
-                ${
-                  isGuest
-                    ? "You've been invited to join TaskFlow as a guest user. You'll have access to specific workspaces assigned to you by the admin."
-                    : "Your account has been created on TaskFlow, PROPER Studios' collaborative task management platform."
-                }
+                ${isGuest
+          ? "You've been invited to join TaskFlow as a guest user. You'll have access to specific workspaces assigned to you by the admin."
+          : "Your account has been created on TaskFlow, PROPER Studios' collaborative task management platform."
+        }
               </p>
               
               <p style="font-size: 16px; margin-bottom: 30px;">
@@ -105,7 +104,7 @@ export async function sendWelcomeEmail({ to, name, resetPasswordUrl, isGuest }: 
       return { success: false, error: error.message || "Failed to send email" }
     }
 
-    console.log("[v0] Welcome email sent successfully to:", to)
+
     return { success: true, data }
   } catch (error: any) {
     console.error("[v0] Exception sending welcome email:", error.message || error)

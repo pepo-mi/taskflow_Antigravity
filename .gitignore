@@ -1,3 +1,4 @@
+
 # dependencies
 /node_modules
 /.pnp
@@ -10,6 +11,7 @@
 /.next/
 /out/
 /build
+next-env.d.ts
 
 # misc
 .DS_Store

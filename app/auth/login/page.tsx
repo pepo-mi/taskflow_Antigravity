@@ -38,7 +38,7 @@ export default function LoginPage() {
           errorMessage.includes("Refresh Token Not Found") ||
           errorMessage.includes("refresh_token_not_found")
         ) {
-          console.log("[v0] Invalid refresh token on login page, clearing session")
+          // Invalid refresh token on login page, clearing session
           // Clear the session
           await supabase.auth.signOut()
         }

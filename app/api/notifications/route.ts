@@ -9,7 +9,7 @@ const NOTIFICATION_CACHE_TTL = 30000 // 30 seconds
 
 export async function GET(request: Request) {
   try {
-    console.log("[v0] Notifications API: Request received")
+
 
     const supabase = await createClient()
 
@@ -22,10 +22,10 @@ export async function GET(request: Request) {
 
     if (cachedAuth && now - cachedAuth.timestamp < AUTH_CACHE_TTL) {
       userId = cachedAuth.userId
-      console.log("[v0] Notifications API: Using cached auth for user:", userId)
+
     } else {
       try {
-        console.log("[v0] Notifications API: Fetching auth user")
+
         const { user: authUser, error: authError } = await getAuthUser(supabase)
 
         if (authError) {
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
             const notifCacheKey = `notifications:${cachedAuth.userId}`
             const cachedNotif = notificationCache.get(notifCacheKey)
             if (cachedNotif) {
-              console.log("[v0] Notifications API: Returning cached notifications due to auth error")
+
               return NextResponse.json({ notifications: cachedNotif.data })
             }
           }
@@ -42,12 +42,12 @@ export async function GET(request: Request) {
         }
 
         if (!authUser) {
-          console.log("[v0] Notifications API: No auth user found")
+
           return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
         userId = authUser.id
-        console.log("[v0] Notifications API: Auth successful for user:", userId)
+
         authCache.set(authCacheKey, { userId, timestamp: now })
       } catch (authErr: any) {
         const errMsg = authErr?.message || String(authErr)
@@ -74,12 +74,12 @@ export async function GET(request: Request) {
     const cachedNotif = notificationCache.get(notifCacheKey)
 
     if (cachedNotif && now - cachedNotif.timestamp < NOTIFICATION_CACHE_TTL) {
-      console.log("[v0] Notifications API: Returning cached notifications")
+
       return NextResponse.json({ notifications: cachedNotif.data })
     }
 
     try {
-      console.log("[v0] Notifications API: Querying database for user:", userId)
+
       const { data, error } = await supabase
         .from("notifications")
         .select("*")
@@ -90,14 +90,14 @@ export async function GET(request: Request) {
       if (error) {
         console.error("[v0] Notifications API: Database query error:", error)
         if (cachedNotif) {
-          console.log("[v0] Notifications API: Returning cached notifications due to query error")
+
           return NextResponse.json({ notifications: cachedNotif.data })
         }
         return NextResponse.json({ error: error.message || "Failed to fetch notifications" }, { status: 500 })
       }
 
       const notifications = data || []
-      console.log("[v0] Notifications API: Successfully fetched", notifications.length, "notifications")
+
 
       notificationCache.set(notifCacheKey, { data: notifications, timestamp: now })
 

@@ -3,12 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createClient as createServerClient, getAuthUser, requireAdmin } from "@/lib/supabase/server"
 import { logAdminAction } from "@/lib/admin-logger"
 
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-})
+
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -39,6 +34,13 @@ export async function DELETE(request: NextRequest) {
       supabaseAdmin.from("users").select("id, email, role").eq("id", userId).maybeSingle(),
       supabaseAdmin.from("guest_users").select("id, email, role").eq("id", userId).maybeSingle(),
     ])
+
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
 
     if (regularUserResult.error) {
       console.error("Error checking regular users table:", regularUserResult.error)

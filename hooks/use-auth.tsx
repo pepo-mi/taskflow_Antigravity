@@ -260,7 +260,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.debug("Failed to setup auth listener:", error instanceof Error ? error.message : error)
-        return () => {} // Return empty cleanup function
+        return () => { } // Return empty cleanup function
       }
     }
 
@@ -292,7 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         if (error.message === "Supabase not configured") {
-          console.log("Demo mode: Simulating successful login for", email)
+
 
           // Create a demo user session
           const demoUserId = `demo-${Date.now()}`
@@ -347,7 +347,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         if (error.message === "Supabase not configured") {
-          console.log("Demo mode: Simulating successful signup for", email)
+
 
           // Create a demo user session
           const demoUserId = `demo-${Date.now()}`

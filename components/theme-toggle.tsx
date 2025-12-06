@@ -66,7 +66,7 @@ export function ThemeToggle() {
     try {
       localStorage.setItem("theme", newTheme)
     } catch (e) {
-      console.log("[v0] localStorage not available")
+
     }
   }
 

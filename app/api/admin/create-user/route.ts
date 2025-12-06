@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
             // Don't fail user creation if workspace access fails
             // The admin can manually assign access later
           } else {
-            console.log(`Successfully assigned ${workspace_ids.length} workspace(s) to guest user`)
+
           }
         } else {
           console.error("No admin_id provided, cannot assign workspace access")
@@ -426,7 +426,7 @@ export async function POST(request: NextRequest) {
             // Don't fail user creation if workspace access fails
             // The admin can manually assign access later
           } else {
-            console.log(`Successfully assigned ${workspace_ids.length} workspace(s) to user`)
+
           }
         } else {
           console.error("No admin_id provided, cannot assign workspace access")
