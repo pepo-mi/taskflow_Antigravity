@@ -308,14 +308,30 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
           status: newTask.status,
           position: maxPosition + 1,
         })
-        .select(`
-          *,
-          assignee:users!tasks_assigned_to_fkey(full_name),
-          creator:users!tasks_created_by_fkey(full_name)
-        `)
+        .select()
         .single()
 
       if (error) throw error
+
+      // Fetch user data separately to handle both regular users and guest users
+      const userIds = []
+      if (data.assigned_to) userIds.push(data.assigned_to)
+      if (data.created_by) userIds.push(data.created_by)
+
+      const [regularUsersResult, guestUsersResult] = await Promise.all([
+        supabase.from("users").select("id, full_name").in("id", userIds),
+        supabase.from("guest_users").select("id, full_name").in("id", userIds),
+      ])
+
+      const userMap = new Map<string, { full_name: string }>()
+      regularUsersResult.data?.forEach((user) => userMap.set(user.id, { full_name: user.full_name }))
+      guestUsersResult.data?.forEach((user) => userMap.set(user.id, { full_name: user.full_name }))
+
+      const taskWithUsers = {
+        ...data,
+        assignee: data.assigned_to ? userMap.get(data.assigned_to) : undefined,
+        creator: data.created_by ? userMap.get(data.created_by) : undefined,
+      }
 
       if (data.assigned_to && data.assigned_to !== auth.user?.id) {
         try {
@@ -345,7 +361,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
         }
       }
 
-      setTasks([...tasks, data])
+      setTasks([...tasks, taskWithUsers])
       setNewTask({ title: "", description: "", status: "todo", assigned_to: "", due_date: "" })
       setIsCreateTaskOpen(false)
     } catch (error) {
@@ -639,16 +655,32 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
           status: taskToDuplicate.status,
           position: maxPosition + 1000,
         })
-        .select(`
-          *,
-          assignee:users!tasks_assigned_to_fkey(full_name),
-          creator:users!tasks_created_by_fkey(full_name)
-        `)
+        .select()
         .single()
 
       if (error) throw error
 
-      setTasks([...tasks, data])
+      // Fetch user data separately to handle both regular users and guest users
+      const userIds = []
+      if (data.assigned_to) userIds.push(data.assigned_to)
+      if (data.created_by) userIds.push(data.created_by)
+
+      const [regularUsersResult, guestUsersResult] = await Promise.all([
+        supabase.from("users").select("id, full_name").in("id", userIds),
+        supabase.from("guest_users").select("id, full_name").in("id", userIds),
+      ])
+
+      const userMap = new Map<string, { full_name: string }>()
+      regularUsersResult.data?.forEach((user) => userMap.set(user.id, { full_name: user.full_name }))
+      guestUsersResult.data?.forEach((user) => userMap.set(user.id, { full_name: user.full_name }))
+
+      const taskWithUsers = {
+        ...data,
+        assignee: data.assigned_to ? userMap.get(data.assigned_to) : undefined,
+        creator: data.created_by ? userMap.get(data.created_by) : undefined,
+      }
+
+      setTasks([...tasks, taskWithUsers])
       setIsEditOpen(false)
       setEditingTask(null)
       setOriginalTask(null)
