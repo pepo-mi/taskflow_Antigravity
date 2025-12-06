@@ -1,0 +1,315 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Updated to contemporary calm design with cool neutrals and soft blues */
+  --background: rgb(249, 250, 252);
+  --foreground: oklch(0 0 0);
+  --card: oklch(1.0 0 0);
+  --card-foreground: oklch(0 0 0);
+  --popover: oklch(1.0 0 0);
+  --popover-foreground: oklch(0 0 0);
+  /* Near-black blue as primary color for professional feel */
+  --primary: rgb(37, 37, 41);
+  --primary-foreground: oklch(1.0 0 0);
+  /* Made secondary more visible for buttons like "Open" */
+  --secondary: oklch(0.7038 0.123 182.5025);
+  --secondary-foreground: oklch(1.0 0 0);
+  /* Muted grays for understated elegance */
+  --muted: oklch(0.9551 0 0);
+  --muted-foreground: rgb(51, 51, 51);
+  /* Soft blue accent for interactive elements */
+  --accent: rgb(245, 209, 10);
+  --accent-foreground: oklch(0 0 0);
+  /* Red for destructive actions as specified */
+  --destructive: oklch(0.6368 0.2078 25.3313);
+  --destructive-foreground: oklch(1.0 0 0);
+  /* Subtle borders with cool tone */
+  --border: oklch(0 0 0);
+  --input: oklch(0.5555 0 0);
+  --ring: oklch(0.7853 0.1041 274.7134);
+  --chart-1: oklch(0.5106 0.2301 276.9656);
+  --chart-2: oklch(0.7038 0.123 182.5025);
+  --chart-3: oklch(0.7686 0.1647 70.0804);
+  --chart-4: oklch(0.6559 0.2118 354.3084);
+  --chart-5: oklch(0.7227 0.192 149.5793);
+  /* Increased radius for friendly, approachable feel */
+  --radius: 1rem;
+  --sidebar: oklch(0.9789 0.0082 121.6272);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(0.5106 0.2301 276.9656);
+  --sidebar-primary-foreground: oklch(1.0 0 0);
+  --sidebar-accent: oklch(0.7686 0.1647 70.0804);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0 0 0);
+  --sidebar-ring: oklch(0.7853 0.1041 274.7134);
+  /* Updated to use Poppins font */
+  --font-poppins: "Poppins", sans-serif;
+  --font-open-sans: "Open Sans", sans-serif;
+  --font-work-sans: "Work Sans", sans-serif;
+}
+
+.dark {
+  /* Made background lighter in dark mode - not too dark */
+  --background: oklch(0.18 0 0); /* Lighter dark background (18% lightness) */
+  --foreground: oklch(1.0 0 0);
+  --card: oklch(0.14 0 0); /* Slightly darker than background for contrast */
+  --card-foreground: oklch(1.0 0 0);
+  --popover: oklch(0.2455 0.0217 257.2823);
+  --popover-foreground: oklch(1.0 0 0);
+  /* Slightly brighter primary for dark mode visibility */
+  --primary: oklch(0.6801 0.1583 276.9349);
+  --primary-foreground: oklch(0 0 0);
+  /* Dark secondary with subtle blue tone */
+  --secondary: oklch(0.7845 0.1325 181.912);
+  --secondary-foreground: oklch(0 0 0);
+  /* Dark muted tones for depth */
+  --muted: oklch(0.3211 0 0);
+  --muted-foreground: oklch(0.8452 0 0);
+  /* Dark accent with blue undertone */
+  --accent: oklch(0.879 0.1534 91.6054);
+  --accent-foreground: oklch(0 0 0);
+  /* Softer red for dark mode destructive actions */
+  --destructive: oklch(0.7106 0.1661 22.2162);
+  --destructive-foreground: oklch(0 0 0);
+  /* Subtle dark borders */
+  --border: oklch(0.4459 0 0);
+  --input: oklch(1.0 0 0);
+  --ring: oklch(0.6801 0.1583 276.9349);
+  --chart-1: oklch(0.6801 0.1583 276.9349);
+  --chart-2: oklch(0.7845 0.1325 181.912);
+  --chart-3: oklch(0.879 0.1534 91.6054);
+  --chart-4: oklch(0.7253 0.1752 349.7607);
+  --chart-5: oklch(0.8003 0.1821 151.711);
+  --sidebar: oklch(0 0 0);
+  --sidebar-foreground: oklch(1.0 0 0);
+  --sidebar-primary: oklch(0.6801 0.1583 276.9349);
+  --sidebar-primary-foreground: oklch(0 0 0);
+  --sidebar-accent: oklch(0.879 0.1534 91.6054);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(1.0 0 0);
+  --sidebar-ring: oklch(0.6801 0.1583 276.9349);
+}
+
+/* General list item styling */
+.project-description-content li {
+  list-style-position: outside;
+  margin-left: 0;
+  padding-left: 2rem;
+}
+
+/* Bullet lists */
+.project-description-content ul {
+  list-style-type: disc;
+  margin-left: 2.5rem;
+  padding-left: 0;
+}
+
+/* Numbered lists */
+.project-description-content ol {
+  list-style-type: decimal;
+  margin-left: 2.5rem;
+  padding-left: 0;
+}
+
+/* Hanging indent for numbered list items */
+.project-description-content ol > li {
+  padding-left: 2rem;
+  text-indent: -1.5rem;
+}
+
+/* Optional: hanging indent for bullets too */
+.project-description-content ul > li {
+  padding-left: 2rem;
+  text-indent: -1.5rem;
+}
+
+/* Marker styling */
+.project-description-content ul li::marker,
+.project-description-content ol li::marker {
+  color: var(--muted-foreground);
+  font-weight: normal;
+}
+
+/* Tailwind Typography overrides */
+.prose ul,
+.prose ol {
+  margin-left: 2rem;
+  padding-left: 0;
+}
+
+.prose li {
+  list-style-position: outside;
+  margin-left: 0;
+  padding-left: 2rem;
+}
+
+/* Optional: match hanging indent in prose */
+.prose ol > li {
+  text-indent: -1.5rem;
+  padding-left: 2rem;
+}
+
+.prose ul > li {
+  text-indent: -1.5rem;
+  padding-left: 2rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  /* Updated font configuration for Poppins */
+  --font-sans: var(--font-poppins);
+  --font-serif: var(--font-poppins);
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    /* Added smooth transitions for theme switching */
+    transition-property: color, background-color, border-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+  body {
+    @apply bg-background text-foreground;
+    /* Added generous spacing for approachable feel */
+    line-height: 1.6;
+  }
+
+  /* Enhanced spacing and typography for contemporary feel */
+  .space-y-6 > * + * {
+    margin-top: 2rem;
+  }
+
+  .space-y-4 > * + * {
+    margin-top: 1.5rem;
+  }
+}
+
+/* Added animation utilities for fade-out and other animations used in components */
+@layer utilities {
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  .animate-in {
+    animation-duration: 150ms;
+    animation-fill-mode: both;
+  }
+
+  .animate-out {
+    animation-duration: 150ms;
+    animation-fill-mode: both;
+  }
+
+  .fade-in {
+    animation-name: fade-in;
+  }
+
+  .fade-out {
+    animation-name: fade-out;
+  }
+
+  .fade-in-0 {
+    animation-name: fade-in;
+    --tw-enter-opacity: 0;
+  }
+
+  .fade-out-0 {
+    animation-name: fade-out;
+    --tw-exit-opacity: 0;
+  }
+
+  .fade-out-80 {
+    animation-name: fade-out;
+    --tw-exit-opacity: 0.8;
+  }
+
+  .zoom-in-95 {
+    --tw-enter-scale: 0.95;
+  }
+
+  .zoom-out-95 {
+    --tw-exit-scale: 0.95;
+  }
+
+  .slide-in-from-top-2 {
+    --tw-enter-translate-y: -0.5rem;
+  }
+
+  .slide-in-from-bottom-2 {
+    --tw-enter-translate-y: 0.5rem;
+  }
+
+  .slide-in-from-left-2 {
+    --tw-enter-translate-x: -0.5rem;
+  }
+
+  .slide-in-from-right-2 {
+    --tw-enter-translate-x: 0.5rem;
+  }
+
+  .slide-out-to-right-full {
+    --tw-exit-translate-x: 100%;
+  }
+
+  .slide-in-from-top-full {
+    --tw-enter-translate-y: -100%;
+  }
+
+  .slide-in-from-bottom-full {
+    --tw-enter-translate-y: 100%;
+  }
+}
