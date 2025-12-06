@@ -646,10 +646,15 @@ const AdminDashboard = () => {
   }
 
   const fetchUserWorkspaces = async (userId: string, role: string) => {
+    // Set empty first to show loading state and prevent stale data
+    setEditUserWorkspaces([])
+
     try {
       // Query the appropriate table based on role
       const tableName = role === "guest" ? "guest_workspace_access" : "user_workspace_access"
       const idColumn = role === "guest" ? "guest_id" : "user_id"
+
+      console.log(`Fetching workspaces for user ${userId} (role: ${role}) from ${tableName}`)
 
       const { data, error } = await supabase
         .from(tableName)
@@ -662,6 +667,7 @@ const AdminDashboard = () => {
         return
       }
 
+      console.log(`Fetched ${data?.length || 0} workspace(s) for user ${userId}:`, data)
       setEditUserWorkspaces(data?.map((item: { workspace_id: string }) => item.workspace_id) || [])
     } catch (error) {
       console.error("Error fetching user workspaces:", error)
