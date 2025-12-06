@@ -137,6 +137,7 @@ const AdminDashboard = () => {
     can_create_tasks: false,
   })
   const [editUserWorkspaces, setEditUserWorkspaces] = useState<string[]>([])
+  const [isLoadingUserWorkspaces, setIsLoadingUserWorkspaces] = useState(false)
   const [isWorkspaceDialogOpen, setIsWorkspaceDialogOpen] = useState(false)
   const [newUserEmail, setNewUserEmail] = useState("")
   const [newUserName, setNewUserName] = useState("")
@@ -646,7 +647,8 @@ const AdminDashboard = () => {
   }
 
   const fetchUserWorkspaces = async (userId: string, role: string) => {
-    // Set empty first to show loading state and prevent stale data
+    // Set loading state and clear previous data
+    setIsLoadingUserWorkspaces(true)
     setEditUserWorkspaces([])
 
     try {
@@ -654,7 +656,7 @@ const AdminDashboard = () => {
       const tableName = role === "guest" ? "guest_workspace_access" : "user_workspace_access"
       const idColumn = role === "guest" ? "guest_id" : "user_id"
 
-      console.log(`Fetching workspaces for user ${userId} (role: ${role}) from ${tableName}`)
+      console.log(`[WorkspaceAccess] Fetching for user ${userId} (role: ${role}) from ${tableName}`)
 
       const { data, error } = await supabase
         .from(tableName)
@@ -662,16 +664,19 @@ const AdminDashboard = () => {
         .eq(idColumn, userId)
 
       if (error) {
-        console.error("Error fetching user workspaces:", error)
+        console.error("[WorkspaceAccess] Error:", error)
         setEditUserWorkspaces([])
         return
       }
 
-      console.log(`Fetched ${data?.length || 0} workspace(s) for user ${userId}:`, data)
-      setEditUserWorkspaces(data?.map((item: { workspace_id: string }) => item.workspace_id) || [])
+      const workspaceIds = data?.map((item: { workspace_id: string }) => item.workspace_id) || []
+      console.log(`[WorkspaceAccess] Fetched ${workspaceIds.length} workspace(s):`, workspaceIds)
+      setEditUserWorkspaces(workspaceIds)
     } catch (error) {
-      console.error("Error fetching user workspaces:", error)
+      console.error("[WorkspaceAccess] Exception:", error)
       setEditUserWorkspaces([])
+    } finally {
+      setIsLoadingUserWorkspaces(false)
     }
   }
 
@@ -2390,7 +2395,9 @@ This is your last chance to cancel. The project will be permanently deleted.`,
                     : "Restrict this user to specific workspaces. Leave empty for access to all workspaces (default)."}
                 </p>
                 <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                  {workspaces.length === 0 ? (
+                  {isLoadingUserWorkspaces ? (
+                    <p className="text-sm text-muted-foreground animate-pulse">Loading workspace access...</p>
+                  ) : workspaces.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No workspaces available</p>
                   ) : (
                     workspaces.map((workspace) => (
