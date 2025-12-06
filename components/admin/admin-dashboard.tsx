@@ -625,6 +625,9 @@ const AdminDashboard = () => {
   }
 
   const openEditUser = (user: User) => {
+    // Clear previous state first to prevent showing stale data
+    setEditUserWorkspaces([])
+
     setEditingUser(user)
     setEditUserName(user.full_name)
     setEditUserRole(user.role)
@@ -638,8 +641,6 @@ const AdminDashboard = () => {
     // Fetch workspace access for both guests and regular users
     if (user.role === "guest" || user.role === "user") {
       fetchUserWorkspaces(user.id, user.role)
-    } else {
-      setEditUserWorkspaces([])
     }
     setIsEditUserDialogOpen(true)
   }
