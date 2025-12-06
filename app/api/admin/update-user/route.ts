@@ -6,6 +6,13 @@ export async function POST(request: NextRequest) {
   try {
     const { userId, full_name, role, privileges, workspace_ids, admin_id } = await request.json()
 
+    // Debug logging
+    console.log("=== UPDATE USER API CALLED ===")
+    console.log("userId:", userId)
+    console.log("role:", role)
+    console.log("workspace_ids:", workspace_ids)
+    console.log("admin_id:", admin_id)
+
     if (!userId || !full_name || !role) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
@@ -94,10 +101,16 @@ export async function POST(request: NextRequest) {
         }
       } else if (role === "user") {
         // For regular users, use user_workspace_access table
+        console.log("=== PROCESSING USER WORKSPACE ACCESS ===")
+        console.log("User ID:", userId)
+        console.log("Workspace IDs to save:", workspace_ids)
+
         const { error: deleteError } = await supabase.from("user_workspace_access").delete().eq("user_id", userId)
 
         if (deleteError) {
           console.error("Error deleting existing user workspace access:", deleteError)
+        } else {
+          console.log("Successfully deleted existing workspace access")
         }
 
         // Only insert if there are specific workspaces assigned (opt-in)
@@ -108,8 +121,9 @@ export async function POST(request: NextRequest) {
             workspace_id,
             granted_by: admin_id,
           }))
+          console.log("Records to insert:", workspaceAccessRecords)
 
-          const { error: insertError } = await supabase.from("user_workspace_access").insert(workspaceAccessRecords)
+          const { data: insertData, error: insertError } = await supabase.from("user_workspace_access").insert(workspaceAccessRecords).select()
 
           if (insertError) {
             console.error("Error inserting user workspace access:", insertError)
@@ -118,6 +132,9 @@ export async function POST(request: NextRequest) {
               { status: 500 },
             )
           }
+          console.log("Successfully inserted workspace access:", insertData)
+        } else {
+          console.log("No workspaces to insert (empty array = no restrictions)")
         }
       }
     }
