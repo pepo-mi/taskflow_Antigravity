@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient as createServerClient, getAuthUser } from "@/lib/supabase/server"
+import { createClient as createServerClient, getAuthUser, requireAdmin } from "@/lib/supabase/server"
+import { logAdminAction } from "@/lib/admin-logger"
 
 const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
   auth: {
@@ -79,6 +80,20 @@ export async function DELETE(request: NextRequest) {
     } catch (authException) {
       console.error("Exception deleting auth user:", authException)
     }
+
+    // Log the action
+    await logAdminAction({
+      supabase: supabaseAdmin,
+      adminId: currentUser.id,
+      action: "DELETE_USER",
+      targetId: userId,
+      targetType: "user",
+      metadata: {
+        email: userData.email,
+        role: userData.role,
+        isGuest: isGuestUser,
+      },
+    })
 
     return NextResponse.json({
       success: true,

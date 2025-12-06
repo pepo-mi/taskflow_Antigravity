@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
+import { logAdminAction } from "@/lib/admin-logger"
 
 const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
   auth: {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     const { createServerClient, requireAdmin } = await import("@/lib/supabase/server")
     const supabase = await createServerClient()
-    const { authorized, error: authError } = await requireAdmin(supabase)
+    const { authorized, user: adminUser, error: authError } = await requireAdmin(supabase)
 
     if (!authorized) {
       console.error("Unauthorized password reset attempt:", authError)
@@ -30,13 +31,6 @@ export async function POST(request: NextRequest) {
 
     const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
       redirectTo: `${baseUrl}/auth/reset-password`,
-      data: {
-        app_name: "TaskFlow",
-        organization: "proper.am",
-        support_email: "support@proper.am",
-        custom_message:
-          "Welcome to TaskFlow! Click the link below to reset your password and access your project management account.",
-      },
     })
 
     if (error) {
@@ -74,6 +68,18 @@ export async function POST(request: NextRequest) {
         },
         { status: 500 },
       )
+    }
+
+    // Log the action
+    if (adminUser) {
+      await logAdminAction({
+        supabase: supabaseAdmin,
+        adminId: adminUser.id,
+        action: "SEND_PASSWORD_RESET",
+        targetId: email, // Using email as targetId since we don't have ID handy easily without another query
+        targetType: "user",
+        metadata: { email },
+      })
     }
 
     return NextResponse.json({

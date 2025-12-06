@@ -30,7 +30,12 @@ import {
   RotateCcw,
   Package,
   BarChart3,
+  Activity,
+  Search,
+  Filter,
 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "@/hooks/use-toast"
 import { sanitizeContent } from "@/lib/content-sanitizer"
 
@@ -160,9 +165,48 @@ const AdminDashboard = () => {
   const [deletingUsers, setDeletingUsers] = useState<Set<string>>(new Set())
   const [selectedWorkspaces, setSelectedWorkspaces] = useState<string[]>([])
 
+  // Search and Filter State
+  const [userSearch, setUserSearch] = useState("")
+  const [userRoleFilter, setUserRoleFilter] = useState<"all" | "admin" | "user" | "guest">("all")
+  const [projectSearch, setProjectSearch] = useState("")
+  const [activityLogs, setActivityLogs] = useState<any[]>([])
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false)
+
   useEffect(() => {
     fetchAdminData()
+    fetchActivityLogs()
   }, [])
+
+  const fetchActivityLogs = async () => {
+    setIsLoadingLogs(true)
+    try {
+      const { data, error } = await supabase
+        .from("admin_activity_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+      setActivityLogs(data || [])
+    } catch (error) {
+      console.error("Error fetching activity logs:", error)
+    } finally {
+      setIsLoadingLogs(false)
+    }
+  }
+
+  // Filtered Data
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.full_name.toLowerCase().includes(userSearch.toLowerCase()) ||
+      user.email.toLowerCase().includes(userSearch.toLowerCase())
+    const matchesRole = userRoleFilter === "all" || user.role === userRoleFilter
+    return matchesSearch && matchesRole
+  })
+
+  const filteredProjects = projects.filter(project => {
+    return project.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
+      project.description?.toLowerCase().includes(projectSearch.toLowerCase())
+  })
 
   const fetchPerformanceData = async () => {
     const cacheKey = `${performanceTimeframe}-${auth.user?.id}`
@@ -277,11 +321,11 @@ const AdminDashboard = () => {
             const avgCompletionTime =
               userTasks?.length > 0
                 ? userTasks.reduce((acc, task) => {
-                    const completionTime = new Date(task.updated_at) - new Date(task.created_at)
-                    return acc + completionTime
-                  }, 0) /
-                  userTasks.length /
-                  (1000 * 60 * 60 * 24)
+                  const completionTime = new Date(task.updated_at) - new Date(task.created_at)
+                  return acc + completionTime
+                }, 0) /
+                userTasks.length /
+                (1000 * 60 * 60 * 24)
                 : 0
 
             return {
@@ -1063,11 +1107,11 @@ This is your last chance to cancel. The project will be permanently deleted.`,
         projects.map((p) =>
           p.id === editingProject.id
             ? {
-                ...data,
-                workspace_name: data.workspace?.name || "Unknown",
-                creator_name: data.creator?.full_name || "Unknown",
-                task_count: taskCount || 0,
-              }
+              ...data,
+              workspace_name: data.workspace?.name || "Unknown",
+              creator_name: data.creator?.full_name || "Unknown",
+              task_count: taskCount || 0,
+            }
             : p,
         ),
       )
@@ -1542,14 +1586,46 @@ This is your last chance to cancel. The project will be permanently deleted.`,
               <span className="hidden sm:inline">Archived</span>
               <span className="sm:hidden">Arch</span>
             </TabsTrigger>
+            <TabsTrigger value="activity" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Activity className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Activity</span>
+              <span className="sm:hidden">Logs</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="users" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <div className="text-sm text-muted-foreground space-y-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <CardTitle>User Management</CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search users..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="pl-8 w-[200px] h-9"
+                    />
+                  </div>
+                  <Select
+                    value={userRoleFilter}
+                    onValueChange={(v: any) => setUserRoleFilter(v)}
+                  >
+                    <SelectTrigger className="w-[130px] h-9">
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="guest">Guest</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground space-y-1 mt-2">
                 <p>• New users receive a password setup email to create their own secure password</p>
                 <p>• Recommend enabling 2FA for enhanced security (users can enable in their profile)</p>
                 <p>• Guest users have limited access, regular users can create workspaces</p>
@@ -1557,37 +1633,40 @@ This is your last chance to cancel. The project will be permanently deleted.`,
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {users.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border rounded-lg space-y-3 sm:space-y-0"
-                  >
-                    <div className="space-y-1 flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <span className="font-medium text-sm sm:text-base">{user.full_name}</span>
-                        <Badge variant={getRoleBadgeVariant(user.role)} className="w-fit">
-                          {user.role}
-                        </Badge>
+                {filteredUsers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No users found matching your filters.
+                  </div>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border rounded-lg space-y-3 sm:space-y-0"
+                    >
+                      <div className="space-y-1 flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                          <span className="font-medium text-sm sm:text-base">{user.full_name}</span>
+                          <Badge variant={getRoleBadgeVariant(user.role)} className="w-fit">
+                            {user.role}
+                          </Badge>
+                        </div>
+                        <div className="text-xs sm:text-sm text-muted-foreground break-all">{user.email}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Created {formatDate(user.created_at)} • {user.organization}
+                        </div>
                       </div>
-                      <div className="text-xs sm:text-sm text-muted-foreground">{user.email}</div>
-                      <div className="text-xs text-muted-foreground">Joined {formatDate(user.created_at)}</div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => sendPasswordReset(user.email)}
-                        title="Send password reset email"
-                        className="text-xs sm:text-sm w-full sm:w-auto"
-                      >
-                        <span className="sm:hidden">Reset</span>
-                        <span className="hidden sm:inline">Reset Password</span>
-                      </Button>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 w-full sm:w-auto">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => openEditUser(user)}
+                          onClick={() => {
+                            setEditingUser(user)
+                            setEditUser({
+                              full_name: user.full_name,
+                              role: user.role,
+                              privileges: user.privileges,
+                            })
+                          }}
                           className="flex-1 sm:flex-none"
                         >
                           <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -1595,24 +1674,24 @@ This is your last chance to cancel. The project will be permanently deleted.`,
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            if (
-                              confirm(
-                                `Are you sure you want to delete user "${user.email}" (${user.full_name})?\n\nThis action cannot be undone. The user will be permanently removed from the system.`,
-                              )
-                            ) {
-                              handleDeleteUser(user.id)
-                            }
-                          }}
-                          disabled={deletingUsers.has(user.id)}
+                          onClick={() => handleSendPasswordReset(user.email)}
                           className="flex-1 sm:flex-none"
+                          title="Send Password Reset Email"
                         >
-                          {deletingUsers.has(user.id) ? "Deleting..." : "Delete"}
+                          <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setDeletingUsers((prev) => new Set(prev).add(user.id))}
+                          className="flex-1 sm:flex-none text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                         </Button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1675,530 +1754,738 @@ This is your last chance to cancel. The project will be permanently deleted.`,
         <TabsContent value="projects" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Project Overview</CardTitle>
-              <div className="flex items-center justify-end">
-                <Dialog open={isCreateProjectDialogOpen} onOpenChange={setIsCreateProjectDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Project
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create New Project</DialogTitle>
-                      <DialogDescription>
-                        Add a new project to this workspace to organize tasks and collaborate.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="project-name">Name</Label>
-                        <Input
-                          id="project-name"
-                          value={newProject.name}
-                          onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                          placeholder="Project Name"
-                        />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <CardTitle>Project Overview</CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search projects..."
+                      value={projectSearch}
+                      onChange={(e) => setProjectSearch(e.target.value)}
+                      className="pl-8 w-[200px] h-9"
+                    />
+                  </div>
+                  <Dialog open={isCreateProjectDialogOpen} onOpenChange={setIsCreateProjectDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Project
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Project</DialogTitle>
+                        <DialogDescription>
+                          Add a new project to this workspace to organize tasks and collaborate.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="project-name">Name</Label>
+                          <Input
+                            id="project-name"
+                            value={newProject.name}
+                            onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                            placeholder="Project Name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="project-description">Description</Label>
+                          <Textarea
+                            id="project-description"
+                            value={newProject.description}
+                            onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                            placeholder="Project Description"
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="project-workspace">Workspace</Label>
+                          <Select
+                            value={newProject.workspace_id}
+                            onValueChange={(value) => setNewProject({ ...newProject, workspace_id: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a workspace" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {workspaces.map((workspace) => (
+                                <SelectItem key={workspace.id} value={workspace.id}>
+                                  {workspace.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setIsCreateProjectDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={createProject} disabled={isCreating}>
+                            {isCreating ? "Creating..." : "Create Project"}
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="project-description">Description</Label>
-                        <Textarea
-                          id="project-description"
-                          value={newProject.description}
-                          onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                          placeholder="Project Description"
-                          rows={3}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="project-workspace">Workspace</Label>
-                        <Select
-                          value={newProject.workspace_id}
-                          onValueChange={(value) => setNewProject({ ...newProject, workspace_id: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a workspace" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {workspaces.map((workspace) => (
-                              <SelectItem key={workspace.id} value={workspace.id}>
-                                {workspace.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setIsCreateProjectDialogOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={createProject} disabled={isCreating}>
-                          {isCreating ? "Creating..." : "Create Project"}
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {projects.map((project) => (
-                  <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{project.name}</span>
-                        {project.completed && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
-                            Completed
-                          </Badge>
-                        )}
-                      </div>
-                      {project.description && (
-                        <div
-                          className="text-sm text-muted-foreground line-clamp-5 prose prose-sm max-w-none [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_ul]:ml-4 [&_ol]:ml-4 [&_a]:underline [&_a]:text-primary [&_a]:hover:text-primary/80"
-                          dangerouslySetInnerHTML={{ __html: sanitizeContent(project.description) }}
-                        />
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        {project.workspace_name} • {project.task_count} tasks • Created by {project.creator_name} •{" "}
-                        {formatDate(project.created_at)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      {project.completed && (
+                {filteredProjects.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No projects found.
+                  </div>
+                ) : (
+                  filteredProjects.map((project) => (
+                    <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
+                          <span className="font-medium">{project.name}</span>
+                          {project.completed && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              Completed
+                            </Badge>
+                          )}
+                        </div>
+                        {project.description && (
+                          <div
+                            className="text-sm text-muted-foreground line-clamp-5 prose prose-sm max-w-none [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_ul]:ml-4 [&_ol]:ml-4 [&_a]:underline [&_a]:text-primary [&_a]:hover:text-primary/80"
+                            dangerouslySetInnerHTML={{ __html: sanitizeContent(project.description) }}
+                          />
+                        )}
+                        <div className="text-xs text-muted-foreground">
+                          {project.workspace_name} • {project.task_count} tasks • Created by {project.creator_name} •{" "}
+                          {formatDate(project.created_at)}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        {project.completed && (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => archiveProject(project.id)}
+                              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => openEditProject(project)}>
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => archiveProject(project.id)}
-                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            onClick={() => deleteProject(project.id, project.name)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
-                            <Archive className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                      )}
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => openEditProject(project)}>
-                          <Edit2 className="w-4 h-4" />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+                      <Input
+                        placeholder="Search projects..."
+                        value={projectSearch}
+                        onChange={(e) => setProjectSearch(e.target.value)}
+                        className="pl-8 w-[200px] h-9"
+                      />
+                    </div >
+  <Dialog open={isCreateProjectDialogOpen} onOpenChange={setIsCreateProjectDialogOpen}>
+    <DialogTrigger asChild>
+      <Button>
+        <Plus className="w-4 h-4 mr-2" />
+        Add Project
+      </Button>
+    </DialogTrigger>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Create New Project</DialogTitle>
+        <DialogDescription>
+          Add a new project to this workspace to organize tasks and collaborate.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="project-name">Name</Label>
+          <Input
+            id="project-name"
+            value={newProject.name}
+            onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+            placeholder="Project Name"
+          />
+        </div>
+        <div>
+          <Label htmlFor="project-description">Description</Label>
+          <Textarea
+            id="project-description"
+            value={newProject.description}
+            onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+            placeholder="Project Description"
+            rows={3}
+          />
+        </div>
+        <div>
+          <Label htmlFor="project-workspace">Workspace</Label>
+          <Select
+            value={newProject.workspace_id}
+            onValueChange={(value) => setNewProject({ ...newProject, workspace_id: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a workspace" />
+            </SelectTrigger>
+            <SelectContent>
+              {workspaces.map((workspace) => (
+                <SelectItem key={workspace.id} value={workspace.id}>
+                  {workspace.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setIsCreateProjectDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={createProject} disabled={isCreating}>
+            {isCreating ? "Creating..." : "Create Project"}
+          </Button>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+                  </div >
+              </CardHeader >
+  <CardContent>
+    <div className="space-y-4">
+    </DialogContent>
+  </Dialog>
+            </div >
+          </CardHeader >
+  <CardContent>
+    <div className="space-y-4">
+      {filteredProjects.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          No projects found.
+        </div>
+      ) : (
+        filteredProjects.map((project) => (
+          <div key={project.id} className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{project.name}</span>
+                {project.completed && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    Completed
+                  </Badge>
+                )}
+              </div>
+              {project.description && (
+                <div
+                  className="text-sm text-muted-foreground line-clamp-5 prose prose-sm max-w-none [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_ul]:ml-4 [&_ol]:ml-4 [&_a]:underline [&_a]:text-primary [&_a]:hover:text-primary/80"
+                  dangerouslySetInnerHTML={{ __html: sanitizeContent(project.description) }}
+                />
+              )}
+              <div className="text-xs text-muted-foreground">
+                {project.workspace_name} • {project.task_count} tasks • Created by {project.creator_name} •{" "}
+                {formatDate(project.created_at)}
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              {project.completed && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => archiveProject(project.id)}
+                    className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                  >
+                    <Archive className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => openEditProject(project)}>
+                  <Edit2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => deleteProject(project.id, project.name)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+    </div>
+  </CardContent>
+        </Card >
+      </TabsContent >
+
+      <TabsContent value="performance" className="space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                User Performance Analytics
+              </CardTitle>
+              <Select value={performanceTimeframe} onValueChange={setPerformanceTimeframe}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Last Month</SelectItem>
+                  <SelectItem value="quarterly">Last Quarter</SelectItem>
+                  <SelectItem value="annual">Last Year</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingPerformance ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="text-muted-foreground">Loading performance data...</div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {performanceData.length === 0 ? (
+                  <div className="text-center p-8 text-muted-foreground">
+                    No performance data available for the selected timeframe.
+                  </div>
+                ) : (
+                  performanceData.map((user) => (
+                    <div key={user.id} className="p-3 sm:p-4 border rounded-lg space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
+                        <div>
+                          <div className="font-medium text-sm sm:text-base">{user.full_name}</div>
+                          <div className="text-xs sm:text-sm text-muted-foreground">{user.email}</div>
+                        </div>
+                        <Badge variant={user.role === "user" ? "default" : "secondary"} className="w-fit">
+                          {user.role}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+                        <div className="text-center p-2 sm:p-3 bg-blue-50 rounded-lg">
+                          <div className="text-lg sm:text-2xl font-bold text-blue-600">
+                            {user.metrics.projectsCreated}
+                          </div>
+                          <div className="text-xs text-blue-600">Projects</div>
+                        </div>
+
+                        <div className="text-center p-2 sm:p-3 bg-green-50 rounded-lg">
+                          <div className="text-lg sm:text-2xl font-bold text-green-600">
+                            {user.metrics.tasksCompleted}
+                          </div>
+                          <div className="text-xs text-green-600">Tasks</div>
+                        </div>
+
+                        <div className="text-center p-2 sm:p-3 bg-purple-50 rounded-lg">
+                          <div className="text-lg sm:text-2xl font-bold text-purple-600">
+                            {user.metrics.completionRate}%
+                          </div>
+                          <div className="text-xs text-purple-600">Rate</div>
+                        </div>
+
+                        <div className="text-center p-2 sm:p-3 bg-orange-50 rounded-lg">
+                          <div className="text-lg sm:text-2xl font-bold text-orange-600">
+                            {user.metrics.avgCompletionTime}d
+                          </div>
+                          <div className="text-xs text-orange-600">Avg Time</div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm text-muted-foreground space-y-1 sm:space-y-0">
+                        <span>Total Tasks: {user.metrics.totalTasks}</span>
+                        <span>On-Time Projects: {user.metrics.projectsOnTime}</span>
+                      </div>
+
+                      {/* Performance indicator bar */}
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min(user.metrics.completionRate, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="archived" className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              Archived Projects
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {archivedProjects.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No archived projects yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {archivedProjects.map((project) => (
+                  <Collapsible key={project.id}>
+                    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{project.name}</span>
+                          <Badge variant="outline" className="bg-gray-100 text-gray-600">
+                            Archived
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {project.workspace_name} • Archived {new Date(project.archived_at).toLocaleDateString()} by{" "}
+                          {project.creator_name}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => showArchivedDetails(project)}>
+                          View Details
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => deleteProject(project.id, project.name)}
+                          onClick={() => restoreProject(project.id)}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <RotateCcw className="w-4 h-4 mr-1" />
+                          Restore
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteArchivedProject(project.id, project.name)}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
                         </Button>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
+                        </CollapsibleTrigger>
                       </div>
                     </div>
-                  </div>
+                    <CollapsibleContent className="px-4 pb-4">
+                      <div className="mt-2 p-4 bg-muted/30 rounded-lg space-y-2">
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium">Tasks:</span>{" "}
+                            {project.archived_snapshot?.tasks?.length || 0}
+                          </div>
+                          <div>
+                            <span className="font-medium">Files:</span>{" "}
+                            {project.archived_snapshot?.files?.length || 0}
+                          </div>
+                          <div>
+                            <span className="font-medium">Posts:</span>{" "}
+                            {project.archived_snapshot?.posts?.length || 0}
+                          </div>
+                        </div>
+                        {project.description && (
+                          <div className="text-sm text-muted-foreground">
+                            <span className="font-medium">Description:</span>
+                            <div
+                              className="mt-1 line-clamp-3 prose prose-sm max-w-none [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_ul]:ml-4 [&_ol]:ml-4 [&_a]:underline [&_a]:text-primary [&_a]:hover:text-primary/80"
+                              dangerouslySetInnerHTML={{ __html: sanitizeContent(project.description) }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-4">
+            )}
+          </CardContent>
+        </Card>
+        <TabsContent value="activity" className="space-y-4">
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  User Performance Analytics
-                </CardTitle>
-                <Select value={performanceTimeframe} onValueChange={setPerformanceTimeframe}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">Last Month</SelectItem>
-                    <SelectItem value="quarterly">Last Quarter</SelectItem>
-                    <SelectItem value="annual">Last Year</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                Activity Log
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={fetchActivityLogs} disabled={isLoadingLogs}>
+                <RotateCcw className={`w-4 h-4 mr-2 ${isLoadingLogs ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
             </CardHeader>
             <CardContent>
-              {loadingPerformance ? (
-                <div className="flex items-center justify-center p-8">
-                  <div className="text-muted-foreground">Loading performance data...</div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {performanceData.length === 0 ? (
-                    <div className="text-center p-8 text-muted-foreground">
-                      No performance data available for the selected timeframe.
-                    </div>
-                  ) : (
-                    performanceData.map((user) => (
-                      <div key={user.id} className="p-3 sm:p-4 border rounded-lg space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
-                          <div>
-                            <div className="font-medium text-sm sm:text-base">{user.full_name}</div>
-                            <div className="text-xs sm:text-sm text-muted-foreground">{user.email}</div>
-                          </div>
-                          <Badge variant={user.role === "user" ? "default" : "secondary"} className="w-fit">
-                            {user.role}
+              <ScrollArea className="h-[600px] pr-4">
+                {isLoadingLogs ? (
+                  <div className="flex justify-center p-8">Loading logs...</div>
+                ) : activityLogs.length === 0 ? (
+                  <div className="text-center p-8 text-muted-foreground">No activity logs found.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {activityLogs.map((log) => (
+                      <div key={log.id} className="flex gap-4 p-4 border rounded-lg bg-card/50">
+                        <div className="mt-1">
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {log.action_type.replace(/_/g, " ")}
                           </Badge>
                         </div>
-
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-                          <div className="text-center p-2 sm:p-3 bg-blue-50 rounded-lg">
-                            <div className="text-lg sm:text-2xl font-bold text-blue-600">
-                              {user.metrics.projectsCreated}
-                            </div>
-                            <div className="text-xs text-blue-600">Projects</div>
-                          </div>
-
-                          <div className="text-center p-2 sm:p-3 bg-green-50 rounded-lg">
-                            <div className="text-lg sm:text-2xl font-bold text-green-600">
-                              {user.metrics.tasksCompleted}
-                            </div>
-                            <div className="text-xs text-green-600">Tasks</div>
-                          </div>
-
-                          <div className="text-center p-2 sm:p-3 bg-purple-50 rounded-lg">
-                            <div className="text-lg sm:text-2xl font-bold text-purple-600">
-                              {user.metrics.completionRate}%
-                            </div>
-                            <div className="text-xs text-purple-600">Rate</div>
-                          </div>
-
-                          <div className="text-center p-2 sm:p-3 bg-orange-50 rounded-lg">
-                            <div className="text-lg sm:text-2xl font-bold text-orange-600">
-                              {user.metrics.avgCompletionTime}d
-                            </div>
-                            <div className="text-xs text-orange-600">Avg Time</div>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm text-muted-foreground space-y-1 sm:space-y-0">
-                          <span>Total Tasks: {user.metrics.totalTasks}</span>
-                          <span>On-Time Projects: {user.metrics.projectsOnTime}</span>
-                        </div>
-
-                        {/* Performance indicator bar */}
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${Math.min(user.metrics.completionRate, 100)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="archived" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="w-5 h-5" />
-                Archived Projects
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {archivedProjects.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No archived projects yet</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {archivedProjects.map((project) => (
-                    <Collapsible key={project.id}>
-                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
                         <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{project.name}</span>
-                            <Badge variant="outline" className="bg-gray-100 text-gray-600">
-                              Archived
-                            </Badge>
+                          <p className="text-sm font-medium">
+                            Action by Admin ID: <span className="font-mono text-muted-foreground">{log.admin_id.slice(0, 8)}...</span>
+                          </p>
+                          <div className="text-xs text-muted-foreground grid grid-cols-2 gap-2 mt-2">
+                            <div>Target Type: {log.target_type}</div>
+                            <div>IP: {log.ip_address || 'Unknown'}</div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {project.workspace_name} • Archived {new Date(project.archived_at).toLocaleDateString()} by{" "}
-                            {project.creator_name}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" onClick={() => showArchivedDetails(project)}>
-                            View Details
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => restoreProject(project.id)}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <RotateCcw className="w-4 h-4 mr-1" />
-                            Restore
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => deleteArchivedProject(project.id, project.name)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Delete
-                          </Button>
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <ChevronDown className="w-4 h-4" />
-                            </Button>
-                          </CollapsibleTrigger>
-                        </div>
-                      </div>
-                      <CollapsibleContent className="px-4 pb-4">
-                        <div className="mt-2 p-4 bg-muted/30 rounded-lg space-y-2">
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <span className="font-medium">Tasks:</span>{" "}
-                              {project.archived_snapshot?.tasks?.length || 0}
-                            </div>
-                            <div>
-                              <span className="font-medium">Files:</span>{" "}
-                              {project.archived_snapshot?.files?.length || 0}
-                            </div>
-                            <div>
-                              <span className="font-medium">Posts:</span>{" "}
-                              {project.archived_snapshot?.posts?.length || 0}
-                            </div>
-                          </div>
-                          {project.description && (
-                            <div className="text-sm text-muted-foreground">
-                              <span className="font-medium">Description:</span>
-                              <div
-                                className="mt-1 line-clamp-3 prose prose-sm max-w-none [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-4 [&_ul]:ml-4 [&_ol]:ml-4 [&_a]:underline [&_a]:text-primary [&_a]:hover:text-primary/80"
-                                dangerouslySetInnerHTML={{ __html: sanitizeContent(project.description) }}
-                              />
+                          {log.metadata && Object.keys(log.metadata).length > 0 && (
+                            <div className="mt-2 text-xs bg-muted p-2 rounded-md font-mono overflow-x-auto">
+                              {JSON.stringify(log.metadata, null, 2)}
                             </div>
                           )}
                         </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  ))}
-                </div>
-              )}
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(log.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Edit User Dialog */}
-      <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>Update user details and privileges</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-user-email">Email</Label>
-              <Input id="edit-user-email" value={editingUser?.email || ""} disabled className="bg-muted" />
-              <div className="text-xs text-muted-foreground mt-1">
-                Email cannot be changed. Use "Reset Password" to send a new password setup email.
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="edit-user-name">Full Name</Label>
-              <Input
-                id="edit-user-name"
-                value={editUserName}
-                onChange={(e) => setEditUserName(e.target.value)}
-                placeholder="John Doe"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-user-role">Role</Label>
-              <Select
-                value={editUserRole}
-                onValueChange={(value) => {
-                  setEditUserRole(value)
-                  if (value === "admin") {
-                    setEditUserPrivileges({
-                      can_create_workspaces: true,
-                      can_create_projects: true,
-                      can_create_tasks: true,
-                    })
-                  } else if (value === "user") {
-                    setEditUserPrivileges({
-                      can_create_workspaces: false,
-                      can_create_projects: true,
-                      can_create_tasks: true,
-                    })
-                  } else {
-                    setEditUserPrivileges({
-                      can_create_workspaces: false,
-                      can_create_projects: false,
-                      can_create_tasks: false,
-                    })
-                  }
-                  if (value !== "guest") {
-                    setEditUserWorkspaces([])
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="guest">Guest</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+{/* Edit User Dialog */ }
+<Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Edit User</DialogTitle>
+      <DialogDescription>Update user details and privileges</DialogDescription>
+    </DialogHeader>
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="edit-user-email">Email</Label>
+        <Input id="edit-user-email" value={editingUser?.email || ""} disabled className="bg-muted" />
+        <div className="text-xs text-muted-foreground mt-1">
+          Email cannot be changed. Use "Reset Password" to send a new password setup email.
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="edit-user-name">Full Name</Label>
+        <Input
+          id="edit-user-name"
+          value={editUserName}
+          onChange={(e) => setEditUserName(e.target.value)}
+          placeholder="John Doe"
+        />
+      </div>
+      <div>
+        <Label htmlFor="edit-user-role">Role</Label>
+        <Select
+          value={editUserRole}
+          onValueChange={(value) => {
+            setEditUserRole(value)
+            if (value === "admin") {
+              setEditUserPrivileges({
+                can_create_workspaces: true,
+                can_create_projects: true,
+                can_create_tasks: true,
+              })
+            } else if (value === "user") {
+              setEditUserPrivileges({
+                can_create_workspaces: false,
+                can_create_projects: true,
+                can_create_tasks: true,
+              })
+            } else {
+              setEditUserPrivileges({
+                can_create_workspaces: false,
+                can_create_projects: false,
+                can_create_tasks: false,
+              })
+            }
+            if (value !== "guest") {
+              setEditUserWorkspaces([])
+            }
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="guest">Guest</SelectItem>
+            <SelectItem value="user">User</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-            {editUserRole === "guest" && (
-              <div className="space-y-3 border-t pt-4">
-                <Label className="text-sm font-medium">Workspace Access</Label>
-                <p className="text-xs text-muted-foreground">
-                  Select which workspaces this guest can access. Guests can only view and interact with projects in
-                  their assigned workspaces.
-                </p>
-                <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                  {workspaces.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No workspaces available</p>
-                  ) : (
-                    workspaces.map((workspace) => (
-                      <div key={workspace.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`edit-workspace-${workspace.id}`}
-                          checked={editUserWorkspaces.includes(workspace.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setEditUserWorkspaces((prev) => [...prev, workspace.id])
-                            } else {
-                              setEditUserWorkspaces((prev) => prev.filter((id) => id !== workspace.id))
-                            }
-                          }}
-                        />
-                        <Label
-                          htmlFor={`edit-workspace-${workspace.id}`}
-                          className="text-sm font-normal cursor-pointer"
-                        >
-                          {workspace.name}
-                        </Label>
-                      </div>
-                    ))
-                  )}
+      {editUserRole === "guest" && (
+        <div className="space-y-3 border-t pt-4">
+          <Label className="text-sm font-medium">Workspace Access</Label>
+          <p className="text-xs text-muted-foreground">
+            Select which workspaces this guest can access. Guests can only view and interact with projects in
+            their assigned workspaces.
+          </p>
+          <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+            {workspaces.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No workspaces available</p>
+            ) : (
+              workspaces.map((workspace) => (
+                <div key={workspace.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`edit-workspace-${workspace.id}`}
+                    checked={editUserWorkspaces.includes(workspace.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setEditUserWorkspaces((prev) => [...prev, workspace.id])
+                      } else {
+                        setEditUserWorkspaces((prev) => prev.filter((id) => id !== workspace.id))
+                      }
+                    }}
+                  />
+                  <Label
+                    htmlFor={`edit-workspace-${workspace.id}`}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {workspace.name}
+                  </Label>
                 </div>
-                {editUserWorkspaces.length > 0 && (
-                  <p className="text-xs text-green-600 dark:text-green-400">
-                    {editUserWorkspaces.length} workspace(s) selected
-                  </p>
-                )}
-              </div>
+              ))
             )}
-
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">User Privileges</Label>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="edit-can-create-workspaces"
-                    checked={editUserPrivileges.can_create_workspaces}
-                    onCheckedChange={(checked) =>
-                      setEditUserPrivileges((prev) => ({
-                        ...prev,
-                        can_create_workspaces: !!checked,
-                      }))
-                    }
-                  />
-                  <Label htmlFor="edit-can-create-workspaces" className="text-sm font-normal">
-                    Can create workspaces
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="edit-can-create-projects"
-                    checked={editUserPrivileges.can_create_projects}
-                    onCheckedChange={(checked) =>
-                      setEditUserPrivileges((prev) => ({
-                        ...prev,
-                        can_create_projects: !!checked,
-                      }))
-                    }
-                  />
-                  <Label htmlFor="edit-can-create-projects" className="text-sm font-normal">
-                    Can create projects
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="edit-can-create-tasks"
-                    checked={editUserPrivileges.can_create_tasks}
-                    onCheckedChange={(checked) =>
-                      setEditUserPrivileges((prev) => ({
-                        ...prev,
-                        can_create_tasks: !!checked,
-                      }))
-                    }
-                  />
-                  <Label htmlFor="edit-can-create-tasks" className="text-sm font-normal">
-                    Can create tasks
-                  </Label>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">Changes will take effect on the user's next login</p>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={updateUser}>Update User</Button>
-            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+          {editUserWorkspaces.length > 0 && (
+            <p className="text-xs text-green-600 dark:text-green-400">
+              {editUserWorkspaces.length} workspace(s) selected
+            </p>
+          )}
+        </div>
+      )}
 
-      {/* Edit Project Dialog */}
-      <Dialog open={isEditProjectDialogOpen} onOpenChange={setIsEditProjectDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
-            <DialogDescription>Update the project name and description.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-project-name">Project Name</Label>
-              <Input
-                id="edit-project-name"
-                value={editProjectName}
-                onChange={(e) => setEditProjectName(e.target.value)}
-                placeholder="Enter project name"
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-project-description">Description (Optional)</Label>
-              <Textarea
-                id="edit-project-description"
-                value={editProjectDescription}
-                onChange={(e) => setEditProjectDescription(e.target.value)}
-                placeholder="Describe this project"
-                rows={3}
-                className="mt-2"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEditProjectDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={updateProject}>Update Project</Button>
-            </div>
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">User Privileges</Label>
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="edit-can-create-workspaces"
+              checked={editUserPrivileges.can_create_workspaces}
+              onCheckedChange={(checked) =>
+                setEditUserPrivileges((prev) => ({
+                  ...prev,
+                  can_create_workspaces: !!checked,
+                }))
+              }
+            />
+            <Label htmlFor="edit-can-create-workspaces" className="text-sm font-normal">
+              Can create workspaces
+            </Label>
           </div>
-        </DialogContent>
-      </Dialog>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="edit-can-create-projects"
+              checked={editUserPrivileges.can_create_projects}
+              onCheckedChange={(checked) =>
+                setEditUserPrivileges((prev) => ({
+                  ...prev,
+                  can_create_projects: !!checked,
+                }))
+              }
+            />
+            <Label htmlFor="edit-can-create-projects" className="text-sm font-normal">
+              Can create projects
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="edit-can-create-tasks"
+              checked={editUserPrivileges.can_create_tasks}
+              onCheckedChange={(checked) =>
+                setEditUserPrivileges((prev) => ({
+                  ...prev,
+                  can_create_tasks: !!checked,
+                }))
+              }
+            />
+            <Label htmlFor="edit-can-create-tasks" className="text-sm font-normal">
+              Can create tasks
+            </Label>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">Changes will take effect on the user's next login</p>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
+          Cancel
+        </Button>
+        <Button onClick={updateUser}>Update User</Button>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
 
-      {/* Archived Project Detail Modal */}
+{/* Edit Project Dialog */ }
+<Dialog open={isEditProjectDialogOpen} onOpenChange={setIsEditProjectDialogOpen}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Edit Project</DialogTitle>
+      <DialogDescription>Update the project name and description.</DialogDescription>
+    </DialogHeader>
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="edit-project-name">Project Name</Label>
+        <Input
+          id="edit-project-name"
+          value={editProjectName}
+          onChange={(e) => setEditProjectName(e.target.value)}
+          placeholder="Enter project name"
+          className="mt-2"
+        />
+      </div>
+      <div>
+        <Label htmlFor="edit-project-description">Description (Optional)</Label>
+        <Textarea
+          id="edit-project-description"
+          value={editProjectDescription}
+          onChange={(e) => setEditProjectDescription(e.target.value)}
+          placeholder="Describe this project"
+          rows={3}
+          className="mt-2"
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => setIsEditProjectDialogOpen(false)}>
+          Cancel
+        </Button>
+        <Button onClick={updateProject}>Update Project</Button>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
+
+{/* Archived Project Detail Modal */ }
       <Dialog open={isArchivedDetailOpen} onOpenChange={setIsArchivedDetailOpen}>
         <DialogContent className="max-w-2xl mx-4 sm:mx-auto">
           <DialogHeader>
@@ -2365,7 +2652,7 @@ This is your last chance to cancel. The project will be permanently deleted.`,
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   )
 }
 

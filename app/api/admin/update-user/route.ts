@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
+import { logAdminAction } from "@/lib/admin-logger"
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,6 +17,12 @@ export async function POST(request: NextRequest) {
     if (!authorized) {
       console.error("Unauthorized update user attempt:", authError)
       return NextResponse.json({ error: "Unauthorized: Admin access required" }, { status: 403 })
+    }
+
+    const { data: { user: adminUser } } = await supabaseAuth.auth.getUser()
+    if (!adminUser) {
+      console.error("Admin user not found after authorization check.")
+      return NextResponse.json({ error: "Admin user not found" }, { status: 403 })
     }
 
     // Create admin client with service role key to bypass RLS
@@ -87,6 +94,20 @@ export async function POST(request: NextRequest) {
         console.log(`[v0] Updated workspace access for guest user: ${workspace_ids.length} workspace(s)`)
       }
     }
+
+    // Log the action
+    await logAdminAction({
+      supabase,
+      adminId: admin_id || adminUser.id,
+      action: "UPDATE_USER",
+      targetId: userId,
+      targetType: "user",
+      metadata: {
+        role: role,
+        updated_fields: Object.keys({ full_name, role, privileges }).filter(k => !!k),
+        workspace_count: workspace_ids?.length || 0,
+      },
+    })
 
     return NextResponse.json({ success: true, data })
   } catch (error) {

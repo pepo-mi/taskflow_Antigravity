@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { logAdminAction } from "@/lib/admin-logger"
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,6 +56,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to update workspace access" }, { status: 500 })
       }
     }
+
+    // Log the action
+    await logAdminAction({
+      supabase: supabaseAdmin,
+      adminId: grantedBy,
+      action: "UPDATE_GUEST_ACCESS",
+      targetId: guest_id,
+      targetType: "user",
+      metadata: {
+        workspace_count: workspace_ids.length,
+        workspace_ids: workspace_ids,
+      },
+    })
 
     return NextResponse.json({
       message: `Workspace access updated. Guest now has access to ${workspace_ids.length} workspace(s).`,

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { logAdminAction } from "@/lib/admin-logger"
 
 export async function POST(request: NextRequest) {
   try {
