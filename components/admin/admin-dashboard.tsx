@@ -656,6 +656,7 @@ const AdminDashboard = () => {
       const tableName = role === "guest" ? "guest_workspace_access" : "user_workspace_access"
       const idColumn = role === "guest" ? "guest_id" : "user_id"
 
+      // DEBUG: Alert to verify function is called with correct parameters
       console.log(`[WorkspaceAccess] Fetching for user ${userId} (role: ${role}) from ${tableName}`)
 
       const { data, error } = await supabase
@@ -665,12 +666,17 @@ const AdminDashboard = () => {
 
       if (error) {
         console.error("[WorkspaceAccess] Error:", error)
+        alert(`Error fetching workspaces: ${error.message}`)
         setEditUserWorkspaces([])
         return
       }
 
       const workspaceIds = data?.map((item: { workspace_id: string }) => item.workspace_id) || []
+
+      // DEBUG: Show what was fetched
       console.log(`[WorkspaceAccess] Fetched ${workspaceIds.length} workspace(s):`, workspaceIds)
+      alert(`DEBUG: User ${userId}\nRole: ${role}\nWorkspaces found: ${workspaceIds.length}\nIDs: ${workspaceIds.join(", ") || "none"}`)
+
       setEditUserWorkspaces(workspaceIds)
     } catch (error) {
       console.error("[WorkspaceAccess] Exception:", error)
