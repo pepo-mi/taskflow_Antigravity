@@ -666,17 +666,12 @@ const AdminDashboard = () => {
 
       if (error) {
         console.error("[WorkspaceAccess] Error:", error)
-        alert(`Error fetching workspaces: ${error.message}`)
         setEditUserWorkspaces([])
         return
       }
 
       const workspaceIds = data?.map((item: { workspace_id: string }) => item.workspace_id) || []
-
-      // DEBUG: Show what was fetched
       console.log(`[WorkspaceAccess] Fetched ${workspaceIds.length} workspace(s):`, workspaceIds)
-      alert(`DEBUG: User ${userId}\nRole: ${role}\nWorkspaces found: ${workspaceIds.length}\nIDs: ${workspaceIds.join(", ") || "none"}`)
-
       setEditUserWorkspaces(workspaceIds)
     } catch (error) {
       console.error("[WorkspaceAccess] Exception:", error)
@@ -1701,17 +1696,7 @@ This is your last chance to cancel. The project will be permanently deleted.`,
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            setEditingUser(user)
-                            setEditUserName(user.full_name)
-                            setEditUserRole(user.role)
-                            setEditUserPrivileges(user.privileges || {
-                              can_create_workspaces: false,
-                              can_create_projects: false,
-                              can_create_tasks: false,
-                            })
-                            setIsEditUserDialogOpen(true)
-                          }}
+                          onClick={() => openEditUser(user)}
                           className="flex-1 sm:flex-none"
                         >
                           <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
