@@ -995,7 +995,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                   value={newTask.description}
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                   placeholder="Describe this task"
-                  rows={3}
+                  rows={6}
                 />
               </div>
               <div>
@@ -1089,7 +1089,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                     onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
                     onKeyDown={handleEditKeyDown}
                     placeholder="Task description"
-                    rows={3}
+                    rows={6}
                   />
                 </div>
 
