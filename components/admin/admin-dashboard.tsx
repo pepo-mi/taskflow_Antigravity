@@ -137,6 +137,7 @@ const AdminDashboard = () => {
     can_create_tasks: false,
   })
   const [editUserWorkspaces, setEditUserWorkspaces] = useState<string[]>([])
+  const [editUserOrganization, setEditUserOrganization] = useState("")
   const [isLoadingUserWorkspaces, setIsLoadingUserWorkspaces] = useState(false)
   const [isWorkspaceDialogOpen, setIsWorkspaceDialogOpen] = useState(false)
   const [newUserEmail, setNewUserEmail] = useState("")
@@ -632,6 +633,7 @@ const AdminDashboard = () => {
     setEditingUser(user)
     setEditUserName(user.full_name)
     setEditUserRole(user.role)
+    setEditUserOrganization(user.organization || "proper.am")
     setEditUserPrivileges(
       user.privileges || {
         can_create_workspaces: false,
@@ -701,6 +703,7 @@ const AdminDashboard = () => {
           userId: editingUser.id,
           full_name: editUserName.trim(),
           role: editUserRole,
+          organization: editUserOrganization,
           privileges: editUserPrivileges,
           // Send workspace_ids for both guests and regular users (not admins)
           workspace_ids: editUserRole !== "admin" ? editUserWorkspaces : undefined,
@@ -2335,6 +2338,18 @@ This is your last chance to cancel. The project will be permanently deleted.`,
                 onChange={(e) => setEditUserName(e.target.value)}
                 placeholder="John Doe"
               />
+            </div>
+            <div>
+              <Label htmlFor="edit-user-organization">Organization</Label>
+              <Input
+                id="edit-user-organization"
+                value={editUserOrganization}
+                onChange={(e) => setEditUserOrganization(e.target.value)}
+                placeholder="proper.am"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Users must have the correct organization to see workspaces (e.g., proper.am)
+              </p>
             </div>
             <div>
               <Label htmlFor="edit-user-role">Role</Label>

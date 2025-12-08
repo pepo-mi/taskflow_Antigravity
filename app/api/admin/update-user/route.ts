@@ -4,12 +4,13 @@ import { logAdminAction } from "@/lib/admin-logger"
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, full_name, role, privileges, workspace_ids, admin_id } = await request.json()
+    const { userId, full_name, role, organization, privileges, workspace_ids, admin_id } = await request.json()
 
     // Debug logging
     console.log("=== UPDATE USER API CALLED ===")
     console.log("userId:", userId)
     console.log("role:", role)
+    console.log("organization:", organization)
     console.log("workspace_ids:", workspace_ids)
     console.log("admin_id:", admin_id)
 
@@ -55,14 +56,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
     }
 
+    // Build update object
+    const updateData: Record<string, unknown> = {
+      full_name: full_name.trim(),
+      role,
+      privileges,
+    }
+
+    // Only include organization if provided (regular users only)
+    if (organization && tableName === "users") {
+      updateData.organization = organization
+    }
+
     // Update the user in the correct table
     const { data, error } = await supabase
       .from(tableName)
-      .update({
-        full_name: full_name.trim(),
-        role,
-        privileges,
-      })
+      .update(updateData)
       .eq("id", userId)
       .select()
       .single()
