@@ -990,7 +990,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
               <div>
                 <Label htmlFor="description">Description (Optional)</Label>
                 <Textarea
-                  className="mt-2 max-h-[min(240px,40vh)] overflow-y-auto [field-sizing:fixed] max-w-full"
+                  className="mt-2 max-h-[min(240px,38vh)] overflow-y-auto [field-sizing:fixed] max-w-full"
                   id="description"
                   value={newTask.description}
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
@@ -1006,7 +1006,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                     setNewTask({ ...newTask, status: value })
                   }
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-2 w-[12.5rem] sm:w-fit">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1020,7 +1020,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
               <div>
                 <Label htmlFor="due_date">Due Date (Optional)</Label>
                 <Input
-                  className="mt-2 max-w-full min-w-0 block [inline-size:100%] [max-inline-size:100%] [min-inline-size:0]"
+                  className="mt-2 w-[12.5rem] sm:w-fit max-w-full"
                   id="due_date"
                   type="date"
                   value={newTask.due_date}
@@ -1083,7 +1083,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                 <div>
                   <Label htmlFor="edit-description">Description</Label>
                   <Textarea
-                    className="border-slate-300 mt-2 break-all max-h-[min(240px,40vh)] overflow-y-auto [field-sizing:fixed] max-w-full"
+                    className="border-slate-300 mt-2 break-all max-h-[min(240px,38vh)] overflow-y-auto [field-sizing:fixed] max-w-full"
                     id="edit-description"
                     value={editingTask.description || ""}
                     onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
@@ -1104,9 +1104,9 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                       })
                     }
                   >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
+                  <SelectTrigger className="mt-2 w-[12.5rem] sm:w-fit">
+                    <SelectValue />
+                  </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todo">To Do</SelectItem>
                       <SelectItem value="in-progress">In Progress</SelectItem>
@@ -1119,7 +1119,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                 <div>
                   <Label htmlFor="edit-due-date">Due Date</Label>
                   <Input
-                    className="mt-2 max-w-full min-w-0 block [inline-size:100%] [max-inline-size:100%] [min-inline-size:0]"
+                    className="mt-2 w-[12.5rem] sm:w-fit max-w-full"
                     id="edit-due-date"
                     type="date"
                     value={editingTask.due_date || ""}
