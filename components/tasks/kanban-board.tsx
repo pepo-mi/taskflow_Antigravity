@@ -975,7 +975,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
               <DialogTitle>Create New Task</DialogTitle>
               <DialogDescription>Add a new task to this project</DialogDescription>
             </DialogHeader>
-            <div className="space-y-6">
+            <div className="space-y-6 min-w-0">
               <div>
                 <Label htmlFor="title">Task Title</Label>
                 <Input
@@ -1020,7 +1020,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
               <div>
                 <Label htmlFor="due_date">Due Date (Optional)</Label>
                 <Input
-                  className="mt-2"
+                  className="mt-2 max-w-full"
                   id="due_date"
                   type="date"
                   value={newTask.due_date}
@@ -1067,7 +1067,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
               <DialogDescription>Update the task details below.</DialogDescription>
             </DialogHeader>
             {editingTask && (
-              <div className="space-y-4 sm:space-y-6">
+              <div className="space-y-4 sm:space-y-6 min-w-0">
                 <div>
                   <Label htmlFor="edit-title">Title</Label>
                   <Input
@@ -1119,7 +1119,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                 <div>
                   <Label htmlFor="edit-due-date">Due Date</Label>
                   <Input
-                    className="mt-2"
+                    className="mt-2 max-w-full"
                     id="edit-due-date"
                     type="date"
                     value={editingTask.due_date || ""}
