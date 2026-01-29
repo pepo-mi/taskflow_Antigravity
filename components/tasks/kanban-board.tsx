@@ -990,7 +990,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
               <div>
                 <Label htmlFor="description">Description (Optional)</Label>
                 <Textarea
-                  className="mt-2"
+                  className="mt-2 max-h-[min(240px,50vh)] overflow-y-auto"
                   id="description"
                   value={newTask.description}
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
@@ -1083,7 +1083,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                 <div>
                   <Label htmlFor="edit-description">Description</Label>
                   <Textarea
-                    className="border-slate-300 mt-2 break-all"
+                    className="border-slate-300 mt-2 break-all max-h-[min(240px,50vh)] overflow-y-auto"
                     id="edit-description"
                     value={editingTask.description || ""}
                     onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
