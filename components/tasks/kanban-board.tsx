@@ -990,7 +990,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
               <div>
                 <Label htmlFor="description">Description (Optional)</Label>
                 <Textarea
-                  className="mt-2 max-h-[min(240px,44vh)] overflow-y-auto [field-sizing:fixed] max-w-full"
+                  className="mt-2 max-h-[min(240px,40vh)] overflow-y-auto [field-sizing:fixed] max-w-full"
                   id="description"
                   value={newTask.description}
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
@@ -1020,7 +1020,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
               <div>
                 <Label htmlFor="due_date">Due Date (Optional)</Label>
                 <Input
-                  className="mt-2 max-w-full min-w-0 [min-inline-size:0]"
+                  className="mt-2 max-w-full min-w-0 block [inline-size:100%] [max-inline-size:100%] [min-inline-size:0]"
                   id="due_date"
                   type="date"
                   value={newTask.due_date}
@@ -1083,7 +1083,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                 <div>
                   <Label htmlFor="edit-description">Description</Label>
                   <Textarea
-                    className="border-slate-300 mt-2 break-all max-h-[min(240px,44vh)] overflow-y-auto [field-sizing:fixed] max-w-full"
+                    className="border-slate-300 mt-2 break-all max-h-[min(240px,40vh)] overflow-y-auto [field-sizing:fixed] max-w-full"
                     id="edit-description"
                     value={editingTask.description || ""}
                     onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
@@ -1119,7 +1119,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                 <div>
                   <Label htmlFor="edit-due-date">Due Date</Label>
                   <Input
-                    className="mt-2 max-w-full min-w-0 [min-inline-size:0]"
+                    className="mt-2 max-w-full min-w-0 block [inline-size:100%] [max-inline-size:100%] [min-inline-size:0]"
                     id="edit-due-date"
                     type="date"
                     value={editingTask.due_date || ""}
@@ -1192,7 +1192,7 @@ const KanbanBoard = ({ project, onBack }: KanbanBoardProps) => {
                     </svg>
                     Duplicate
                   </Button>
-                  <Button onClick={() => updateTask(editingTask)} className="flex-1 sm:flex-none py-[0] my-0.5">
+                  <Button onClick={() => updateTask(editingTask)} className="flex-1 sm:flex-none h-11 sm:h-9">
                     Update Task
                   </Button>
                 </div>
