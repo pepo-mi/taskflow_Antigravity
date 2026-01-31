@@ -62,7 +62,7 @@
     "crypto": "1.0.1",
     "jszip": "latest",
     "lucide-react": "^0.454.0",
-    "next": "15.1.9",
+    "next": "15.1.11",
     "next-themes": "latest",
     "react": "^18",
     "react-dom": "^18",
